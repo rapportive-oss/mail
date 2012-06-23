@@ -76,7 +76,7 @@ module Mail
       warn "Warning: more than 1000 header fields only using the first 1000" if unfolded_fields.length > 1000
       unfolded_fields[0..1000].each do |field|
 
-        field = Field.new(field, nil, charset)
+        field = Field.new(field, nil)
         field.errors.each { |error| self.errors << error }
         selected = select_field_for(field.name)
 
@@ -157,7 +157,7 @@ module Mail
       # User wants to create the field
       else
         # Need to insert in correct order for trace fields
-        self.fields << Field.new(name.to_s, value, charset)
+        self.fields << Field.new(name.to_s, value)
       end
     end
     
