@@ -116,6 +116,11 @@ describe Mail::Message do
       mail.sub_type.should eq 'plain'
     end
 
+    it "should not explode on unparseable content-type field" do
+      mail = Mail::Message.new("Content-Type: txt/plain; charset=utf-8;")
+      doing{ mail.charset }.should_not raise_error
+    end
+
     it "should be able to pass an empty reply-to header" do
       mail = Mail.new(File.read(fixture('emails', 'error_emails', 'empty_in_reply_to.eml')))
       mail.in_reply_to.should be_blank
