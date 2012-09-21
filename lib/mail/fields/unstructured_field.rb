@@ -139,7 +139,13 @@ module Mail
         line = ""
         while !words.empty?
           break unless word = words.first.dup
-          word.encode!(charset) if defined?(Encoding) && charset
+          if defined?(Encoding) && charset
+            begin
+              word.encode!(charset)
+            rescue Encoding::UndefinedConversionError
+              should_encode = true
+            end
+          end
           word = encode(word) if should_encode
           word = encode_crlf(word)
           # Skip to next line if we're going to go past the limit
