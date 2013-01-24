@@ -90,7 +90,7 @@ module Mail
       warn "Warning: more than #{self.class.maximum_amount} header fields only using the first #{self.class.maximum_amount}" if unfolded_fields.length > self.class.maximum_amount
       unfolded_fields[0..(self.class.maximum_amount-1)].each do |field|
 
-        field = Field.new(field, nil, charset)
+        field = Field.new(field, nil)
         field.errors.each { |error| self.errors << error }
         if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any? 
           selected.first.update(field.name, field.value)
@@ -169,7 +169,7 @@ module Mail
       # User wants to create the field
       else
         # Need to insert in correct order for trace fields
-        self.fields << Field.new(name.to_s, value, charset)
+        self.fields << Field.new(name.to_s, value)
       end
       if dasherize(fn) == "content-type"
         # Update charset if specified in Content-Type
