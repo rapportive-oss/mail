@@ -1375,7 +1375,7 @@ module Mail
     #
     # Otherwise raises a warning
     def add_charset
-      if !body.empty?
+      if !body.empty? && main_type == 'text'
         # Only give a warning if this isn't an attachment, has non US-ASCII and the user
         # has not specified an encoding explicitly.
         if @defaulted_charset && body.raw_source.not_ascii_only? && !self.attachment?
