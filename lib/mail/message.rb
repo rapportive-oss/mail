@@ -1693,7 +1693,6 @@ module Mail
         part.transport_encoding = transport_encoding
         part.ready_to_send!
       end
-      add_required_fields
     end
 
     def encode!
