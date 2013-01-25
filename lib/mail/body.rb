@@ -154,6 +154,13 @@ module Mail
         self.sort_parts!
         encoded_parts = parts.map { |p| p.encoded }
         ([preamble] + encoded_parts).join(crlf_boundary) + end_boundary + epilogue.to_s
+      elsif @decoded
+        enc = Mail::Encodings::get_encoding(get_best_encoding(transfer_encoding))
+        if defined?(Encoding) && charset && charset != "US-ASCII"
+          @decoded.encode!(charset)
+          @decoded.force_encoding('BINARY') unless Encoding.find(charset).ascii_compatible?
+        end
+        enc.encode(@decoded)
       else
         decoder = Mail::Encodings::get_encoding(encoding)
         encoder = Mail::Encodings::get_encoding(get_best_encoding(transfer_encoding))
@@ -168,6 +175,9 @@ module Mail
       end
     end
 
+    attr_writer :decoded, :raw_source
+
+    # XXX: doesn't look at @decoded!
     def decoded
       if !Encodings.defined?(encoding)
         raise UnknownEncodingType, "Don't know how to decode #{encoding}, please call #encoded and decode it yourself."
