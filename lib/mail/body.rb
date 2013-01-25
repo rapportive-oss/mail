@@ -155,30 +155,24 @@ module Mail
         encoded_parts = parts.map { |p| p.encoded }
         ([preamble] + encoded_parts).join(crlf_boundary) + end_boundary + epilogue.to_s
       else
-        be = get_best_encoding(transfer_encoding)
-        dec = Mail::Encodings::get_encoding(encoding)
-        enc = Mail::Encodings::get_encoding(be)
-        if transfer_encoding == encoding and dec.nil?
-            # Cannot decode, so skip normalization
-            raw_source
+        decoder = Mail::Encodings::get_encoding(encoding)
+        encoder = Mail::Encodings::get_encoding(get_best_encoding(transfer_encoding))
+        if transfer_encoding == encoding || decoder.nil?
+          # Cannot decode, so skip normalization
+          raw_source
         else
-            # Decode then encode to normalize and allow transforming 
-            # from base64 to Q-P and vice versa
-            decoded = dec.decode(raw_source)
-            if defined?(Encoding) && charset && charset != "US-ASCII"
-              decoded.encode!(charset)
-              decoded.force_encoding('BINARY') unless Encoding.find(charset).ascii_compatible?
-            end
-            enc.encode(decoded)
+          # Decode then encode to normalize and allow transforming
+          # from base64 to Q-P and vice versa, but don't touch the charset
+          encoder.encode(decoder.decode(raw_source))
         end
       end
     end
-    
+
     def decoded
       if !Encodings.defined?(encoding)
         raise UnknownEncodingType, "Don't know how to decode #{encoding}, please call #encoded and decode it yourself."
       else
-        Encodings.get_encoding(encoding).decode(raw_source)
+        Encodings.get_encoding(encoding).decode(raw_source).ensure_valid_utf8!(charset)
       end
     end
     

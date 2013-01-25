@@ -1,6 +1,27 @@
 # encoding: utf-8
 require File.expand_path('../environment', __FILE__)
 
+class String
+  def ensure_valid_utf8!(asserted_encoding = nil)
+    encoding = if asserted_encoding
+                 Encoding.find(asserted_encoding)
+               elsif force_encoding('UTF-8').valid_encoding?
+                 Encoding::UTF_8
+               else
+                 Encoding::WINDOWS_1252
+               end
+
+    force_encoding(encoding)
+
+    if encoding == Encoding::UTF_8 && !valid_encoding?
+      # go via UTF-16 to force ruby into actually doing anything
+      encode!(Encoding::UTF_16BE, :invalid => :replace, :undef => :replace).encode!(Encoding::UTF_8)
+    else
+      encode!(Encoding::UTF_8, :invalid => :replace, :undef => :replace)
+    end
+  end
+end
+
 unless defined?(MAIL_ROOT)
   STDERR.puts("Running Specs under Ruby Version #{RUBY_VERSION}")
   MAIL_ROOT = File.join(File.dirname(__FILE__), '../')
