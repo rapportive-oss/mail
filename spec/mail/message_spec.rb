@@ -1096,6 +1096,15 @@ describe Mail::Message do
           mail.to_s =~ %r{Content-Type: text/plain;\r\n}
         end
 
+        it "should not set the charset if the file is an inline image" do
+          body = "BASE64IMGAEDATA"
+          mail = Mail.new
+          mail.body = body
+          mail.content_type = 'image/png'
+          mail.content_disposition = 'inline; filename="foo.png"'
+          Mail.new(mail.encoded).content_type.should == "image/png"
+        end
+
         it "should raise a warning if there is no content type and there is non ascii chars and default to text/plain, UTF-8" do
           body = "This is NOT plain text ASCII　− かきくけこ"
           mail = Mail.new
