@@ -1686,6 +1686,7 @@ module Mail
     # Encodes the message, calls encode on all it's parts, gets an email message
     # ready to send
     def ready_to_send!
+      body.charset = charset
       identify_and_set_transfer_encoding
       parts.sort!([ "text/plain", "text/enriched", "text/html", "multipart/alternative" ]) if body.need_to_sort?
       parts.each do |part|
@@ -1924,6 +1925,9 @@ module Mail
     end
 
     def add_encoding_to_body
+      if has_charset?
+        @body.charset = charset
+      end
       if has_content_transfer_encoding?
         @body.encoding = content_transfer_encoding
       end
