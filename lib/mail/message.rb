@@ -1700,7 +1700,6 @@ module Mail
     # Encodes the message, calls encode on all its parts, gets an email message
     # ready to send
     def ready_to_send!
-      header.ready_to_send!
       body.charset = charset
       identify_and_set_transfer_encoding
       parts.sort!([ "text/plain", "text/enriched", "text/html", "multipart/alternative" ]) if body.need_to_sort?
@@ -1708,7 +1707,6 @@ module Mail
         part.transport_encoding = transport_encoding
         part.ready_to_send!
       end
-      add_required_fields
     end
 
     def encode!
