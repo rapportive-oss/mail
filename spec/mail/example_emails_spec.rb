@@ -275,6 +275,17 @@ describe "Test emails" do
 
     end
 
+    describe "raw_email_starting_with_space.eml" do
+
+      before(:each) do
+        @message = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email_starting_with_space.eml')))
+      end
+
+      it "should parse the body" do
+        @message.body.should =~ /Reverted/
+      end
+    end
+
     describe "sig_only_email.eml" do
       before(:each) do
         @message = Mail.read(fixture('emails', 'mime_emails', 'sig_only_email.eml'))

@@ -1,0 +1,27 @@
+Received: from tools02.corp.linkedin.com (172.18.46.250) by
+ esv4-cas02.linkedin.biz (172.18.46.142) with Microsoft SMTP Server id
+ 14.1.355.2; Fri, 25 Jan 2013 14:32:09 -0800
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+From: CRT Notifications <crt-notifications-noreply@linkedin.com>
+To: Example <example@example.com>
+Subject: Reverting back 46964b45b3a2d50c8c8777128a5d8f179a121b77,
+	Please refer to
+	https://mp-trunkdev-hudson.corp.linkedin.com/job/MP_TRUNKDEV_POSTCOMMIT/969/
+Message-ID: <82077049-8e7b-4f95-90e8-84da7b2f9514@ESV4-CAS02.linkedin.biz>
+Return-Path: crt-notifications-noreply@linkedin.com
+Date: Fri, 25 Jan 2013 14:32:09 -0800
+X-MS-Exchange-Organization-AuthSource: esv4-cas02.linkedin.biz
+X-MS-Exchange-Organization-AuthAs: Internal
+X-MS-Exchange-Organization-AuthMechanism: 0a
+X-Originating-IP: [172.18.46.250]
+MIME-Version: 1.0
+
+      Hello example,
+
+      Reverted back 46964b45b3a2d50c8c8777128a5d8f179a121b77, Please refer to https://mp-trunkdev-hudson.corp.linkedin.com/job/MP_TRUNKDEV_POSTCOMMIT/969/
+      The replacement revision is 127ca8c104fd96ca35edeb09dd4c706d792cb2fc.
+
+      Please make sure that the issue is fixed when you recommit your changes.
+
+      Thanks.
