@@ -146,7 +146,7 @@ module Mail
         line = ""
         while !words.empty?
           break unless word = words.first.dup
-          if defined?(Encoding) && charset
+          if charset && word.respond_to?(:encode!)
             begin
               word.encode!(charset)
             rescue Encoding::UndefinedConversionError

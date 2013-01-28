@@ -184,7 +184,7 @@ module Mail
     end
 
     rule quoted_string
-      CFWS? DQUOTE quoted_content:(FWS? qcontent)+ FWS? DQUOTE CFWS?
+      CFWS? DQUOTE quoted_content:(FWS? qcontent)* FWS? DQUOTE CFWS?
     end
 
     rule qcontent
@@ -338,7 +338,7 @@ module Mail
     end
     
     rule name_val_list
-      (CFWS)? (name_val_pair (CFWS name_val_pair)*)
+      (CFWS)? (name_val_pair (CFWS name_val_pair)*)?
     end
     
     rule name_val_pair

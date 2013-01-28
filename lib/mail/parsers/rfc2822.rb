@@ -2389,12 +2389,7 @@ module Mail
               break
             end
           end
-          if s4.empty?
-            @index = i4
-            r4 = nil
-          else
-            r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
-          end
+          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
           s0 << r4
           if r4
             r10 = _nt_FWS
@@ -2804,6 +2799,23 @@ module Mail
       r0
     end
 
+    module Mailbox0
+      def dig_comments(comments, elements)
+        elements.each { |elem|
+          if elem.respond_to?(:comment)
+            comments << elem.comment
+          end
+          dig_comments(comments, elem.elements) if elem.elements
+         }
+      end
+
+      def comments
+        comments = []
+        dig_comments(comments, elements)
+        comments
+      end
+    end
+
     def _nt_mailbox
       start_index = index
       if node_cache[:mailbox].has_key?(index)
@@ -2819,10 +2831,12 @@ module Mail
       r1 = _nt_name_addr
       if r1
         r0 = r1
+        r0.extend(Mailbox0)
       else
         r2 = _nt_addr_spec
         if r2
           r0 = r2
+          r0.extend(Mailbox0)
         else
           @index = i0
           r0 = nil
@@ -2852,24 +2866,6 @@ module Mail
       end
     end
 
-    module Address1
-
-      def dig_comments(comments, elements)
-        elements.each { |elem|
-          if elem.respond_to?(:comment)
-            comments << elem.comment
-          end
-          dig_comments(comments, elem.elements) if elem.elements
-         }
-      end
-
-      def comments
-        comments = []
-        dig_comments(comments, elements)
-        comments
-      end
-    end
-
     def _nt_address
       start_index = index
       if node_cache[:address].has_key?(index)
@@ -2888,7 +2884,6 @@ module Mail
         r0 = r1
       else
         r2 = _nt_mailbox
-        r2.extend(Address1)
         if r2
           r0 = r2
         else
@@ -4299,41 +4294,46 @@ module Mail
       end
       s0 << r1
       if r1
-        i3, s3 = index, []
-        r4 = _nt_name_val_pair
-        s3 << r4
-        if r4
-          s5, i5 = [], index
+        i4, s4 = index, []
+        r5 = _nt_name_val_pair
+        s4 << r5
+        if r5
+          s6, i6 = [], index
           loop do
-            i6, s6 = index, []
-            r7 = _nt_CFWS
-            s6 << r7
-            if r7
-              r8 = _nt_name_val_pair
-              s6 << r8
+            i7, s7 = index, []
+            r8 = _nt_CFWS
+            s7 << r8
+            if r8
+              r9 = _nt_name_val_pair
+              s7 << r9
             end
-            if s6.last
-              r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
-              r6.extend(NameValList0)
+            if s7.last
+              r7 = instantiate_node(SyntaxNode,input, i7...index, s7)
+              r7.extend(NameValList0)
             else
-              @index = i6
-              r6 = nil
+              @index = i7
+              r7 = nil
             end
-            if r6
-              s5 << r6
+            if r7
+              s6 << r7
             else
               break
             end
           end
-          r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
-          s3 << r5
+          r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
+          s4 << r6
         end
-        if s3.last
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-          r3.extend(NameValList1)
+        if s4.last
+          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+          r4.extend(NameValList1)
         else
-          @index = i3
-          r3 = nil
+          @index = i4
+          r4 = nil
+        end
+        if r4
+          r3 = r4
+        else
+          r3 = instantiate_node(SyntaxNode,input, index...index)
         end
         s0 << r3
       end

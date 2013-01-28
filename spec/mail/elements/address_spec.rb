@@ -44,13 +44,13 @@ describe Mail::Address do
     end
 
 
-    it "should give it's address back on :to_s if there is no display name" do
+    it "should give its address back on :to_s if there is no display name" do
       parse_text = 'test@lindsaar.net'
       result     = 'test@lindsaar.net'
       Mail::Address.new(parse_text).to_s.should eq result
     end
 
-    it "should give it's format back on :to_s if there is a display name" do
+    it "should give its format back on :to_s if there is a display name" do
       parse_text = 'Mikel Lindsaar <test@lindsaar.net>'
       result     = 'Mikel Lindsaar <test@lindsaar.net>'
       Mail::Address.new(parse_text).to_s.should eq result
@@ -75,6 +75,11 @@ describe Mail::Address do
       result     = 'Mikel@@@Lindsaar'
       a          = Mail::Address.new(parse_text)
       a.display_name.should eq result
+    end
+
+    it "should decode the display name without calling #decoded first" do
+      encoded = '=?ISO-8859-1?Q?Jan_Kr=FCtisch?= <jan@krutisch.de>'
+      Mail::Address.new(encoded).display_name.should eq 'Jan Krütisch'
     end
 
     it "should give back the local part" do
@@ -124,6 +129,11 @@ describe Mail::Address do
       result     = "Mikel (first name) Lindsaar (author) <test@lindsaar.net>"
       a          = Mail::Address.new(parse_text)
       a.raw.should eq result
+    end
+
+    it "should format junk addresses as raw text" do
+      junk = '<"somename@gmail.com">'
+      Mail::Address.new(junk).format.should eq junk
     end
 
   end
@@ -639,11 +649,7 @@ describe Mail::Address do
       address              = Mail::Address.new
       address.display_name = "まける"
       address.address      = "mikel@test.lindsaar.net"
-      if RUBY_VERSION >= '1.9'
-        address.encoded.should eq '=?UTF-8?B?44G+44GR44KL?= <mikel@test.lindsaar.net>'
-      else
-        address.encoded.should eq '=?UTF8?B?44G+44GR44KL?= <mikel@test.lindsaar.net>'
-      end
+      address.encoded.should eq '=?UTF-8?B?44G+44GR44KL?= <mikel@test.lindsaar.net>'
     end
 
     it "should provide an encoded output for non us-ascii" do

@@ -17,10 +17,14 @@ Gem::Specification.new do |s|
 
   s.add_dependency('mime-types', "~> 1.16")
   s.add_dependency('treetop', '~> 1.4.8')
-  s.add_dependency('i18n', '>= 0.4.0')
   s.add_dependency('jruby-openssl') if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
   s.add_dependency('tlsmail', '~> 0.0.1') if RUBY_VERSION == '1.8.6'
 
+  s.add_development_dependency('bundler', '>= 1.0.3')
+  s.add_development_dependency('rake', '> 0.8.7')
+  s.add_development_dependency('rspec', '~> 2.12.0')
+  s.add_development_dependency('rdoc')
+
   s.require_path = 'lib'
-  s.files = %w(README.md CONTRIBUTING.md CHANGELOG.rdoc Dependencies.txt Gemfile Rakefile TODO.rdoc) + Dir.glob("lib/**/*")
+  s.files = %w(README.md MIT-LICENSE CONTRIBUTING.md CHANGELOG.rdoc Dependencies.txt Gemfile Rakefile TODO.rdoc) + Dir.glob("lib/**/*")
 end

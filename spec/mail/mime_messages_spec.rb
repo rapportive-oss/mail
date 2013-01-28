@@ -127,7 +127,7 @@ describe "MIME Emails" do
 
     describe "multipart/alternative emails" do
 
-      it "should know what it's boundary is if it is a multipart document" do
+      it "should know what its boundary is if it is a multipart document" do
         mail = Mail.new('Content-Type: multipart/mixed; boundary="--==Boundary"')
         mail.boundary.should eq "--==Boundary"
       end
@@ -137,12 +137,6 @@ describe "MIME Emails" do
         mail.boundary.should eq nil
       end
 
-      it "should allow you to assign a text part" do
-        mail = Mail.new
-        text_mail = Mail.new("This is Text")
-        doing { mail.text_part = text_mail }.should_not raise_error
-      end
-
       it "should assign the text part and allow you to reference" do
         mail = Mail.new
         text_mail = Mail.new("This is Text")
@@ -150,10 +144,10 @@ describe "MIME Emails" do
         mail.text_part.should eq text_mail
       end
 
-      it "should allow you to assign a html part" do
+      it "should not assign a nil text part" do
         mail = Mail.new
-        html_mail = Mail.new("<b>This is HTML</b>")
-        doing { mail.text_part = html_mail }.should_not raise_error
+        mail.text_part = nil
+        mail.text_part.should be_nil
       end
 
       it "should assign the html part and allow you to reference" do
@@ -161,6 +155,36 @@ describe "MIME Emails" do
         html_mail = Mail.new("<b>This is HTML</b>")
         mail.html_part = html_mail
         mail.html_part.should eq html_mail
+      end
+
+      it "should not assign a nil html part" do
+        mail = Mail.new
+        mail.html_part = nil
+        mail.html_part.should be_nil
+      end
+
+      it "should set default content type on assigned text and html parts" do
+        mail = Mail.new
+        mail.text_part = Mail.new
+        mail.text_part.content_type.should eq 'text/plain'
+        mail.html_part = Mail.new
+        mail.html_part.content_type.should eq 'text/html'
+      end
+
+      it "should set default content type on declared text and html parts" do
+        mail = Mail.new
+        mail.text_part { }
+        mail.text_part.content_type.should eq 'text/plain'
+        mail.html_part { }
+        mail.html_part.content_type.should eq 'text/html'
+      end
+
+      it "should not override content type" do
+        mail = Mail.new
+        mail.text_part { content_type 'text/plain+foo' }
+        mail.text_part.content_type.should eq 'text/plain+foo'
+        mail.html_part { content_type 'text/html+foo' }
+        mail.html_part.content_type.should eq 'text/html+foo'
       end
 
       it "should add the html part and text part" do
@@ -177,7 +201,31 @@ describe "MIME Emails" do
         mail.parts.last.class.should eq Mail::Part
       end
 
-      it "should set the content type to multipart/alternative if you use the html_part and text_part helpers" do
+      it "should remove the html part and back out of multipart/alternative if set to nil" do
+        mail = Mail.new
+        mail.text_part = Mail::Part.new
+        mail.html_part = Mail::Part.new
+        mail.parts.length.should eq 2
+
+        mail.html_part = nil
+        mail.parts.length.should eq 1
+        mail.boundary.should be_nil
+        mail.content_type.should be_nil
+      end
+
+      it "should remove the text part and back out of multipart/alternative if set to nil" do
+        mail = Mail.new
+        mail.text_part = Mail::Part.new
+        mail.html_part = Mail::Part.new
+        mail.parts.length.should eq 2
+
+        mail.text_part = nil
+        mail.parts.length.should eq 1
+        mail.boundary.should be_nil
+        mail.content_type.should be_nil
+      end
+
+      it "should set the content type to multipart/alternative if you assign html and text parts" do
         mail = Mail.new
         mail.text_part = Mail::Part.new do
           body "This is Text"
@@ -187,6 +235,25 @@ describe "MIME Emails" do
           body "<b>This is HTML</b>"
         end
         mail.to_s.should =~ %r|Content-Type: multipart/alternative;\s+boundary="#{mail.boundary}"|
+      end
+
+      it "should set the content type to multipart/alternative if you declare html and text parts" do
+        mail = Mail.new
+        mail.text_part { }
+        mail.html_part { }
+        mail.to_s.should =~ %r|Content-Type: multipart/alternative;\s+boundary="#{mail.boundary}"|
+      end
+
+      it "should not set the content type to multipart/alternative if you declare an html part but not a text part" do
+        mail = Mail.new
+        mail.html_part { }
+        mail.to_s.should_not =~ %r|Content-Type: multipart/alternative;\s+boundary="#{mail.boundary}"|
+      end
+
+      it "should not set the content type to multipart/alternative if you declare a text part but not an html part" do
+        mail = Mail.new
+        mail.text_part { }
+        mail.to_s.should_not =~ %r|Content-Type: multipart/alternative;\s+boundary="#{mail.boundary}"|
       end
 
       it "should add the end boundary tag" do
@@ -400,16 +467,16 @@ describe "MIME Emails" do
         end
         if RUBY_VERSION >= '1.9'
           tripped = mail.attachments[0].decoded
-          original = File.read(fixture('attachments', 'test.png')).force_encoding(Encoding::BINARY)
+          original = File.open(fixture('attachments', 'test.png'), 'rb', &:read)
           tripped.should eq original
           tripped = mail.attachments[1].decoded
-          original = File.read(fixture('attachments', 'test.jpg')).force_encoding(Encoding::BINARY)
+          original = File.open(fixture('attachments', 'test.jpg'), 'rb', &:read)
           tripped.should eq original
           tripped = mail.attachments[2].decoded
-          original = File.read(fixture('attachments', 'test.pdf')).force_encoding(Encoding::BINARY)
+          original = File.open(fixture('attachments', 'test.pdf'), 'rb', &:read)
           tripped.should eq original
           tripped = mail.attachments[3].decoded
-          original = File.read(fixture('attachments', 'test.zip')).force_encoding(Encoding::BINARY)
+          original = File.open(fixture('attachments', 'test.zip'), 'rb', &:read)
           tripped.should eq original
         else
           mail.attachments[0].decoded.should eq File.read(fixture('attachments', 'test.png'))
@@ -420,7 +487,7 @@ describe "MIME Emails" do
       end
 
       it "should allow you to send in file data instead of having to read it" do
-        file_data = File.read(fixture('attachments', 'test.png'))
+        file_data = File.open(fixture('attachments', 'test.png'), 'rb', &:read)
         mail = Mail::Message.new do
           from    'mikel@from.lindsaar.net'
           subject 'Hello there Mikel'
@@ -429,10 +496,10 @@ describe "MIME Emails" do
         end
         if RUBY_VERSION >= '1.9'
           tripped = mail.attachments[0].decoded
-          original = File.read(fixture('attachments', 'test.png')).force_encoding(Encoding::BINARY)
+          original = File.open(fixture('attachments', 'test.png'), 'rb', &:read)
           tripped.should eq original
         else
-          mail.attachments[0].decoded.should eq File.read(fixture('attachments', 'test.png'))
+          mail.attachments[0].decoded.should eq File.open(fixture('attachments', 'test.png'), 'rb', &:read)
         end
       end
 

@@ -1,4 +1,4 @@
-Mail
+Mail [![Build Status](https://travis-ci.org/mikel/mail.png?branch=master)](https://travis-ci.org/mikel/mail)
 ====
 
 Introduction
@@ -42,11 +42,12 @@ me a nice email :)
 Compatibility
 -------------
 
-Mail is tested by Travis ([![Travis Build Status](https://travis-ci.org/mikel/mail.png "Build Status")](https://travis-ci.org/mikel/mail)) and works on the [following platforms](https://github.com/mikel/mail/blob/master/.travis.yml)
+Every Mail commit is tested by Travis on the [following platforms](https://github.com/mikel/mail/blob/master/.travis.yml)
 
 * ruby-1.8.7-p370 [ i686 ]
 * ruby-1.9.2-p290 [ x86_64 ]
 * ruby-1.9.3-p327 [ x86_64 ]
+* ruby-2.0.0-rc1 [ x86_64 ]
 * jruby-1.6.8 [ x86_64 ]
 * jruby-1.7.0 [ x86_64 ]
 * rbx-d18 [ x86_64 ]
@@ -135,7 +136,7 @@ I have tried to simplify it some:
    the header fields (like 'To:' or 'Subject:').
 
 3. By default, calling <code>#to_s</code> on a container object will call its encoded
-   method, while <code>#to_s</code> on a field object will call it's decoded method.
+   method, while <code>#to_s</code> on a field object will call its decoded method.
    So calling <code>#to_s</code> on a Mail object will return the mail, all encoded
    ready to send, while calling <code>#to_s</code> on the From field or the body will
    return the decoded value of the object. The header object of Mail is considered a
@@ -202,7 +203,7 @@ mail.to_s =~ /Message\-ID: <[\d\w_]+@.+.mail/ #=> 27
 Mail will automatically add a Message-ID field if it is missing and
 give it a unique, random Message-ID along the lines of:
 
-    <4a7ff76d7016_13a81ab802e1@local.fqdn.mail>
+    <4a7ff76d7016_13a81ab802e1@local.host.mail>
 
 ### Or do worry about Message-IDs:
 
@@ -265,7 +266,7 @@ mail.delivery_method :sendmail
 mail.deliver
 ```
 
-Exim requires it's own delivery manager, and can be used like so:
+Exim requires its own delivery manager, and can be used like so:
 
 ```ruby
 mail.delivery_method :exim, :location => "/usr/bin/exim"
@@ -642,7 +643,7 @@ License
 
 (The MIT License)
 
-Copyright (c) 2009, 2010, 2011, 2012 Mikel Lindsaar
+Copyright (c) 2009-2013 Mikel Lindsaar
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

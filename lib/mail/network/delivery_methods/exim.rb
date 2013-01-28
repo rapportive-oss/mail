@@ -1,5 +1,3 @@
-require 'mail/check_delivery_params'
-
 module Mail
 
   # A delivery method implementation which sends via exim.
@@ -38,16 +36,13 @@ module Mail
   #
   #   mail.deliver!
   class Exim < Sendmail
-    include Mail::CheckDeliveryParams
-
     def initialize(values)
       self.settings = { :location       => '/usr/sbin/exim',
                         :arguments      => '-i -t' }.merge(values)
     end
 
     def self.call(path, arguments, destinations, mail)
-      check_params(mail)
-      IO.popen("#{path} #{arguments}", "w+") do |io|
+      popen "#{path} #{arguments}" do |io|
         io.puts mail.encoded.to_lf
         io.flush
       end

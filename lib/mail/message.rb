@@ -122,7 +122,7 @@ module Mail
       if args.flatten.first.respond_to?(:each_pair)
         init_with_hash(args.flatten.first)
       else
-        init_with_string(args.flatten[0].to_s.strip)
+        init_with_string(args.flatten[0].to_s)
       end
 
       if block_given?
@@ -169,7 +169,7 @@ module Mail
     #   obj.mail.deliver
     #
     # Would cause Mail to call obj.deliver_mail passing itself as a parameter,
-    # which then can just yield and let Mail do it's own private do_delivery
+    # which then can just yield and let Mail do its own private do_delivery
     # method.
     attr_accessor :delivery_handler
 
@@ -1516,7 +1516,7 @@ module Mail
 
     # Returns an AttachmentsList object, which holds all of the attachments in
     # the receiver object (either the entier email or a part within) and all
-    # of it's descendants.
+    # of its descendants.
     #
     # It also allows you to add attachments to the mail object directly, like so:
     #
@@ -1559,9 +1559,7 @@ module Mail
     # Accessor for html_part
     def html_part(&block)
       if block_given?
-        @html_part = Mail::Part.new(&block)
-        add_multipart_alternate_header unless html_part.blank?
-        add_part(@html_part)
+        self.html_part = Mail::Part.new(:content_type => 'text/html', &block)
       else
         @html_part || find_first_mime_type('text/html')
       end
@@ -1570,9 +1568,7 @@ module Mail
     # Accessor for text_part
     def text_part(&block)
       if block_given?
-        @text_part = Mail::Part.new(&block)
-        add_multipart_alternate_header unless html_part.blank?
-        add_part(@text_part)
+        self.text_part = Mail::Part.new(:content_type => 'text/plain', &block)
       else
         @text_part || find_first_mime_type('text/plain')
       end
@@ -1581,36 +1577,54 @@ module Mail
     # Helper to add a html part to a multipart/alternative email.  If this and
     # text_part are both defined in a message, then it will be a multipart/alternative
     # message and set itself that way.
-    def html_part=(msg = nil)
+    def html_part=(msg)
+      # Assign the html part and set multipart/alternative if there's a text part.
       if msg
         @html_part = msg
-      else
-        @html_part = Mail::Part.new('Content-Type: text/html;')
+        @html_part.content_type = 'text/html' unless @html_part.has_content_type?
+        add_multipart_alternate_header if text_part
+        add_part @html_part
+
+      # If nil, delete the html part and back out of multipart/alternative.
+      elsif @html_part
+        parts.delete_if { |p| p.object_id == @html_part.object_id }
+        @html_part = nil
+        if text_part
+          self.content_type = nil
+          body.boundary = nil
+        end
       end
-      add_multipart_alternate_header unless text_part.blank?
-      add_part(@html_part)
     end
 
     # Helper to add a text part to a multipart/alternative email.  If this and
     # html_part are both defined in a message, then it will be a multipart/alternative
     # message and set itself that way.
-    def text_part=(msg = nil)
+    def text_part=(msg)
+      # Assign the text part and set multipart/alternative if there's an html part.
       if msg
         @text_part = msg
-      else
-        @text_part = Mail::Part.new('Content-Type: text/plain;')
+        @text_part.content_type = 'text/plain' unless @text_part.has_content_type?
+        add_multipart_alternate_header if html_part
+        add_part @text_part
+
+      # If nil, delete the text part and back out of multipart/alternative.
+      elsif @text_part
+        parts.delete_if { |p| p.object_id == @text_part.object_id }
+        @text_part = nil
+        if html_part
+          self.content_type = nil
+          body.boundary = nil
+        end
       end
-      add_multipart_alternate_header unless html_part.blank?
-      add_part(@text_part)
     end
 
     # Adds a part to the parts list or creates the part list
     def add_part(part)
       if !body.multipart? && !self.body.decoded.blank?
-         @text_part = Mail::Part.new('Content-Type: text/plain;')
-         @text_part.body = body.decoded
-         self.body << @text_part
-         add_multipart_alternate_header
+        @text_part = Mail::Part.new('Content-Type: text/plain;')
+        @text_part.body = body.decoded
+        self.body << @text_part
+        add_multipart_alternate_header
       end
       add_boundary
       self.body << part
@@ -1646,7 +1660,7 @@ module Mail
     #  m.add_file(:filename => 'filename.png', :content => File.read('/path/to/file.jpg'))
     #
     # Note also that if you add a file to an existing message, Mail will convert that message
-    # to a MIME multipart email, moving whatever plain text body you had into it's own text
+    # to a MIME multipart email, moving whatever plain text body you had into its own text
     # plain part.
     #
     # Example:
@@ -1683,7 +1697,7 @@ module Mail
       self.body << text_part
     end
 
-    # Encodes the message, calls encode on all it's parts, gets an email message
+    # Encodes the message, calls encode on all its parts, gets an email message
     # ready to send
     def ready_to_send!
       body.charset = charset
@@ -1875,7 +1889,7 @@ module Mail
     # Additionally, I allow for the case where someone might have put whitespace
     # on the "gap line"
     def parse_message
-      header_part, body_part = raw_source.split(/#{CRLF}#{WSP}*#{CRLF}(?!#{WSP})/m, 2)
+      header_part, body_part = raw_source.lstrip.split(/#{CRLF}#{CRLF}|#{CRLF}#{WSP}*#{CRLF}(?!#{WSP})/m, 2)
       self.header = header_part
       self.body   = body_part
     end
@@ -1904,11 +1918,11 @@ module Mail
 
 
     def process_body_raw
-       @body = Mail::Body.new(@body_raw)
-       @body_raw = nil
-       separate_parts if @separate_parts
+      @body = Mail::Body.new(@body_raw)
+      @body_raw = nil
+      separate_parts if @separate_parts
 
-       add_encoding_to_body
+      add_encoding_to_body
     end
 
     def set_envelope_header
@@ -1941,14 +1955,17 @@ module Mail
     end
 
     def add_required_fields
-      add_multipart_mixed_header    unless !body.multipart?
-      body = nil                    if body.nil?
-      add_message_id                unless (has_message_id? || self.class == Mail::Part)
-      add_date                      unless has_date?
-      add_mime_version              unless has_mime_version?
+      add_required_message_fields
+      add_multipart_mixed_header    if body.multipart?
       add_content_type              unless has_content_type?
       add_charset                   unless has_charset?
       add_content_transfer_encoding unless has_content_transfer_encoding?
+    end
+
+    def add_required_message_fields
+      add_date          unless has_date?
+      add_mime_version  unless has_mime_version?
+      add_message_id    unless has_message_id?
     end
 
     def add_multipart_alternate_header

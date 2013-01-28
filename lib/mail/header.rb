@@ -50,7 +50,7 @@ module Mail
     def initialize(header_text = nil, charset = nil)
       @errors = []
       @charset = charset
-      self.raw_source = header_text.to_crlf
+      self.raw_source = header_text.to_crlf.lstrip
       split_header if header_text
     end
     
@@ -154,6 +154,9 @@ module Mail
     #  h['X-Mail-SPAM'] # => nil
     def []=(name, value)
       name = dasherize(name)
+      if name.include?(':')
+        raise ArgumentError, "Header names may not contain a colon: #{name.inspect}"
+      end
       fn = name.downcase
       selected = select_field_for(fn)
       
@@ -198,6 +201,7 @@ module Mail
 
     def encoded
       buffer = ''
+      buffer.force_encoding('us-ascii') if buffer.respond_to?(:force_encoding)
       fields.each do |field|
         buffer << field.encoded
       end

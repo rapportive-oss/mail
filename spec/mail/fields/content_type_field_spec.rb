@@ -127,8 +127,8 @@ describe Mail::ContentTypeField do
       c = Mail::ContentTypeField.new('text/plain; name=This is a bad filename.txt')
       c.value.should eq 'text/plain; name="This is a bad filename.txt"'
 
-      c = Mail::ContentTypeField.new('image/jpg; name=some.jpg')
-      c.value.should eq 'image/jpg; name=some.jpg'
+      c = Mail::ContentTypeField.new('image/jpg; name=some.jpg; size=100')
+      c.value.should eq 'image/jpg; name=some.jpg; size=100'
 
       c = Mail::ContentTypeField.new('text/plain; name="Bad filename but at least it is wrapped in quotes.txt"')
       c.value.should eq 'text/plain; name="Bad filename but at least it is wrapped in quotes.txt"'
@@ -358,6 +358,13 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'multipart'
       c.sub_type.should eq 'alternative'
       c.parameters.should eql({"boundary" =>"MuLtIpArT_BoUnDaRy"})
+    end
+
+    it %(should handle 'multipart/alternative; boundary="----jkhkjgyurlkmn789809";; charset="us-ascii"') do
+      string = %(multipart/alternative; boundary="----jkhkjgyurlkmn789809";; charset="us-ascii")
+      c = Mail::ContentTypeField.new(string)
+      c.content_type.should eq 'multipart/alternative'
+      c.parameters['boundary'].should == '----jkhkjgyurlkmn789809'
     end
 
     it "should handle 'multipart/mixed'" do
@@ -592,6 +599,15 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'image'
       c.sub_type.should eq 'jpeg'
       c.parameters.should eql({"name" => "IM 006.jpg"})
+    end
+
+    it "should handle 'unknown/unknown'" do
+      string = %(unknown/unknown; charset=iso-8859-1; name=IMSTP19.gif)
+      c = Mail::ContentTypeField.new(string)
+      c.content_type.should eq 'unknown/unknown'
+      c.main_type.should eq 'unknown'
+      c.sub_type.should eq 'unknown'
+      c.parameters.should eql('charset' => 'iso-8859-1', 'name' => 'IMSTP19.gif')
     end
 
   end

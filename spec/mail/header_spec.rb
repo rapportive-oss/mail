@@ -1,6 +1,5 @@
 # encoding: utf-8
 require 'spec_helper'
-require "active_support/core_ext/kernel/reporting"
 
 describe Mail::Header do
 
@@ -43,12 +42,12 @@ describe Mail::Header do
       header.should be_has_content_id
     end
     
-    it "should know it's own charset" do
+    it "should know its own charset" do
       header = Mail::Header.new("To: Mikel\r\nFrom: bob\r\nContent-ID: <1234@me.com>")
       header.charset.should eq nil
     end
     
-    it "should know it's own charset if set" do
+    it "should know its own charset if set" do
       header = Mail::Header.new
       header['content-type'] = 'text/plain; charset=utf-8'
       header.charset.should eq 'utf-8'
@@ -236,6 +235,10 @@ describe Mail::Header do
         header.encoded.should match(/^User-Agent: /)
         header.encoded.should_not match(/^user-agent: /)
       end
+
+      it "should not accept field names containing colons" do
+        doing { Mail::Header.new['a:b'] = 'c' }.should raise_error
+      end
       
     end
   
@@ -260,6 +263,13 @@ describe Mail::Header do
     it "should accept any valid header field name" do
       test_name = ascii.reject { |c| c == ':' }.join
       doing { Mail::Header.new("#{test_name}: This is a crazy name") }.should_not raise_error
+    end
+
+    it "should not try to accept colons in header field names" do
+      header = Mail::Header.new("Colon:in:header: oops")
+      header.fields.size.should eq 1
+      header.fields.first.name.should eq 'Colon'
+      header['Colon'].value.should eq 'in:header: oops'
     end
 
     # A field body may be composed of any US-ASCII characters,
@@ -448,11 +458,11 @@ HERE
   
   describe "error handling" do
     it "should collect up any of its fields' errors" do
-      header = Mail::Header.new("Content-Transfer-Encoding: vlad\r\nReply-To: a b b")
+      header = Mail::Header.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b")
       header.errors.should_not be_blank
       header.errors.size.should eq 2
       header.errors[0][0].should eq 'Content-Transfer-Encoding'
-      header.errors[0][1].should eq 'vlad'
+      header.errors[0][1].should eq 'vl@d'
       header.errors[1][0].should eq 'Reply-To'
       header.errors[1][1].should eq 'a b b'
     end
@@ -535,9 +545,21 @@ TRACEHEADER
 
   describe "encoding" do
     it "should output a parsed version of itself to US-ASCII on encoded and tidy up and sort correctly" do
-      header = Mail::Header.new("To: Mikel\r\n\sLindsaar <mikel@test.lindsaar.net>\r\nFrom: bob\r\n\s<bob@test.lindsaar.net>\r\nSubject: This is\r\n a long\r\n\s \t \t \t    badly formatted             \r\n       \t\t  \t       field")
+      encoded = Mail::Header.new("To: Mikel\r\n\sLindsaar <mikel@test.lindsaar.net>\r\nFrom: bob\r\n\s<bob@test.lindsaar.net>\r\nSubject: This is\r\n a long\r\n\s \t \t \t    badly formatted             \r\n       \t\t  \t       field").encoded
       result = "From: bob <bob@test.lindsaar.net>\r\nTo: Mikel Lindsaar <mikel@test.lindsaar.net>\r\nSubject: This is a long badly formatted field\r\n"
-      header.encoded.should eq result
+      if result.respond_to?(:encode!)
+        result.encode!(Encoding::US_ASCII)
+        encoded.encoding.should eq Encoding::US_ASCII if encoded.respond_to?(:encoding)
+      end
+      encoded.should eq result
+    end
+
+    if '1.9'.respond_to?(:force_encoding)
+      it "should blow up on encoding mismatches" do
+        junk = "Subject: \xAF".force_encoding(Encoding::ASCII_8BIT)
+        header = Mail::Header.new(junk, 'utf-8')
+        doing { header.encoded }.should raise_error
+      end
     end
   end
   
@@ -610,9 +632,12 @@ TRACEHEADER
       old_maximum_amount = Mail::Header.maximum_amount
       begin
         Mail::Header.maximum_amount = 10
-        silence_warnings do
+        begin
+          $VERBOSE, old_verbose = nil, $VERBOSE
           header = Mail::Header.new("X-SubscriberID: 345\n" * 11)
           header.fields.size.should == 10
+        ensure
+          $VERBOSE = old_verbose
         end
       ensure
         Mail::Header.maximum_amount = old_maximum_amount

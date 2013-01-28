@@ -49,29 +49,29 @@ describe Mail::Message do
     end
 
     it "should be able to parse a basic email" do
-      doing { Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'basic_email.eml'))) }.should_not raise_error
+      doing { Mail.read(fixture('emails', 'plain_emails', 'basic_email.eml')) }.should_not raise_error
     end
 
     it "should be able to parse an email with @ in display name" do
-      message = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email_with_at_display_name.eml')))
+      message = Mail.read(fixture('emails', 'plain_emails', 'raw_email_with_at_display_name.eml'))
       message.to.should eq ["smith@gmail.com", "raasdnil@gmail.com", "tom@gmail.com"]
     end
 
     it "should be able to parse an email with only blank lines as body" do
-      doing { Mail::Message.new(File.read(fixture('emails', 'error_emails', 'missing_body.eml'))) }.should_not raise_error
+      doing { Mail.read(fixture('emails', 'error_emails', 'missing_body.eml')) }.should_not raise_error
     end
 
     it "should be able to parse an email with a funky date header" do
-      doing { Mail::Message.new(File.read(fixture('emails', 'error_emails', 'bad_date_header2.eml'))) }
+      doing { Mail.read(fixture('emails', 'error_emails', 'bad_date_header2.eml')) }
     end
 
     it 'should be able to invoke subject on a funky subject header' do
-      Mail::Message.new(File.read(fixture('emails', 'error_emails', 'bad_subject.eml'))).subject
+      Mail.read(fixture('emails', 'error_emails', 'bad_subject.eml')).subject
     end
 
 
     it 'should be able to parse an email missing an encoding' do
-      Mail::Message.new(File.read(fixture('emails', 'error_emails', 'must_supply_encoding.eml')))
+      Mail.read(fixture('emails', 'error_emails', 'must_supply_encoding.eml'))
     end
 
     it "should be able to parse every email example we have without raising an exception" do
@@ -82,7 +82,7 @@ describe Mail::Message do
       expected_failures = []
       emails.each do |email|
         begin
-          Mail::Message.new(File.read(email))
+          Mail.read(email)
         rescue => e
           unless expected_failures.include?(email)
             puts "Failed on email #{email}"
@@ -104,28 +104,28 @@ describe Mail::Message do
 
     it "should not raise a warning on having non US-ASCII characters in the header (should just handle it)" do
       STDERR.should_not_receive(:puts)
-      Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email_string_in_date_field.eml')))
+      Mail.read(fixture('emails', 'plain_emails', 'raw_email_string_in_date_field.eml'))
     end
 
     it "should raise a warning (and keep parsing) on having an incorrectly formatted header" do
       STDERR.should_receive(:puts).with("WARNING: Could not parse (and so ignoring) 'quite Delivered-To: xxx@xxx.xxx'")
-      Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email_incorrect_header.eml')))
+      Mail.read(fixture('emails', 'plain_emails', 'raw_email_incorrect_header.eml'))
     end
 
     it "should read in an email message and basically parse it" do
-      mail = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'basic_email.eml')))
+      mail = Mail.read(fixture('emails', 'plain_emails', 'basic_email.eml'))
       mail.to.should eq ["raasdnil@gmail.com"]
     end
 
     it "should not fail parsing message with caps in content_type" do
-      mail = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'mix_caps_content_type.eml')))
+      mail = Mail.read(fixture('emails', 'plain_emails', 'mix_caps_content_type.eml'))
       mail.content_type.should eq 'text/plain; charset=iso-8859-1'
       mail.main_type.should eq 'text'
       mail.sub_type.should eq 'plain'
     end
 
     it "should be able to pass an empty reply-to header" do
-      mail = Mail.new(File.read(fixture('emails', 'error_emails', 'empty_in_reply_to.eml')))
+      mail = Mail.read(fixture('emails', 'error_emails', 'empty_in_reply_to.eml'))
       mail.in_reply_to.should be_blank
     end
 
@@ -197,19 +197,19 @@ describe Mail::Message do
     end
 
     it "should strip off the envelope from field if present" do
-      message = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email.eml')))
+      message = Mail.read(fixture('emails', 'plain_emails', 'raw_email.eml'))
       message.envelope_from.should eq "jamis_buck@byu.edu"
       message.envelope_date.should eq ::DateTime.parse("Mon May  2 16:07:05 2005")
     end
 
     it "should strip off the envelope from field if present" do
-      message = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email.eml')))
+      message = Mail.read(fixture('emails', 'plain_emails', 'raw_email.eml'))
       message.raw_envelope.should eq "jamis_buck@byu.edu Mon May  2 16:07:05 2005"
       message.from.should eq ["jamis@37signals.com"]
     end
 
     it "should not cause any problems if there is no envelope from present" do
-      message = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'basic_email.eml')))
+      message = Mail.read(fixture('emails', 'plain_emails', 'basic_email.eml'))
       message.from.should eq ["test@lindsaar.net"]
     end
 
@@ -220,7 +220,7 @@ describe Mail::Message do
     end
 
     it "should handle a multipart message that has ^From in it" do
-      m = Mail::Message.new(File.read(fixture('emails', 'error_emails', 'cant_parse_from.eml')))
+      m = Mail.read(fixture('emails', 'error_emails', 'cant_parse_from.eml'))
       m.from.should_not be_nil
       m.from.should eq ["News@InsideApple.Apple.com"]
       m.should be_multipart
@@ -237,7 +237,7 @@ describe Mail::Message do
 
     it "should set a raw source instance variable to equal the passed in message" do
       mail = Mail::Message.new(basic_email)
-      mail.raw_source.should eq basic_email.strip
+      mail.raw_source.should eq basic_email
     end
 
     it "should set the raw source instance variable to '' if no message is passed in" do
@@ -259,7 +259,7 @@ describe Mail::Message do
 
     it "should give the body class the body to parse" do
       body = Mail::Body.new("email message")
-      Mail::Body.should_receive(:new).with("email message").and_return(body)
+      Mail::Body.should_receive(:new).with("email message\r\n").and_return(body)
       mail = Mail::Message.new(basic_email)
       mail.body #body calculates now lazy so need to ask for it
     end
@@ -290,25 +290,20 @@ describe Mail::Message do
 
     it "should allow for whitespace at the start of the email" do
       mail = Mail.new("\r\n\r\nFrom: mikel\r\n\r\nThis is the body")
-      mail.from.should eq ['mikel']
       mail.body.to_s.should eq 'This is the body'
+      mail.from.should eq ['mikel']
     end
 
     it "should read in an email message with the word 'From' in it multiple times and parse it" do
-      mail = Mail::Message.new(File.read(fixture('emails', 'mime_emails', 'two_from_in_message.eml')))
+      mail = Mail.read(fixture('emails', 'mime_emails', 'two_from_in_message.eml'))
       mail.to.should_not be_nil
       mail.to.should eq ["tester2@test.com"]
     end
 
     it "should parse non-UTF8 sources" do
-      mail = Mail::Message.new(File.read(fixture('emails', 'multi_charset', 'japanese_shiftjis.eml')))
+      mail = Mail.read(fixture('emails', 'multi_charset', 'japanese_shiftjis.eml'))
       mail.to.should eq ["raasdnil@gmail.com"]
-      if RUBY_VERSION >= '1.9'
-        expected = mail.body.decoded.force_encoding("iso-2022-jp").encode("UTF-8")
-      else
-        expected = "すみません。"
-      end
-      expected.should eq "すみません。"
+      mail.decoded.should eq "すみません。\n\n"
     end
   end
 
@@ -905,8 +900,7 @@ describe Mail::Message do
                body 'This is a body of the email'
           end
           mail.add_message_id
-          fqdn ||= ::Socket.gethostname
-          mail.to_s.should =~ /Message-ID: <[\w]+@#{fqdn}.mail>\r\n/
+          mail.to_s.should =~ /Message-ID: <[\w]+@#{::Socket.gethostname}.mail>\r\n/
         end
 
         it "should make an email and inject a message ID if none was set if told to_s" do
@@ -1268,6 +1262,10 @@ describe Mail::Message do
         mail.body.encoded.should eq "VGhlIGJvZHk=\r\n"
       end
 
+      it 'should not strip the raw mail source in case the trailing \r\n is meaningful' do
+        Mail.new("Content-Transfer-Encoding: quoted-printable;\r\n\r\nfoo=\r\nbar=\r\nbaz=\r\n").decoded.should eq 'foobarbaz'
+      end
+
     end
 
   end
@@ -1545,11 +1543,11 @@ describe Mail::Message do
 
   describe "error handling" do
     it "should collect up any of its fields' errors" do
-      mail = Mail.new("Content-Transfer-Encoding: vlad\r\nReply-To: a b b\r\n")
+      mail = Mail.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b\r\n")
       mail.errors.should_not be_blank
       mail.errors.size.should eq 2
       mail.errors[0][0].should eq 'Content-Transfer-Encoding'
-      mail.errors[0][1].should eq 'vlad'
+      mail.errors[0][1].should eq 'vl@d'
       mail.errors[1][0].should eq 'Reply-To'
       mail.errors[1][1].should eq 'a b b'
     end
@@ -1641,7 +1639,7 @@ describe Mail::Message do
     describe "to a basic message" do
 
       before do
-        @mail = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'basic_email.eml')))
+        @mail = Mail.read(fixture('emails', 'plain_emails', 'basic_email.eml'))
       end
 
       it "should create a new message" do
@@ -1683,7 +1681,7 @@ describe Mail::Message do
     describe "to a message with an explicit reply-to address" do
 
       before do
-        @mail = Mail::Message.new(File.read(fixture('emails', 'rfc2822', 'example06.eml')))
+        @mail = Mail.read(fixture('emails', 'rfc2822', 'example06.eml'))
       end
 
       it "should be sent to the reply-to address" do
@@ -1695,7 +1693,7 @@ describe Mail::Message do
     describe "to a message with more than one recipient" do
 
       before do
-        @mail = Mail::Message.new(File.read(fixture('emails', 'rfc2822', 'example03.eml')))
+        @mail = Mail.read(fixture('emails', 'rfc2822', 'example03.eml'))
       end
 
       it "should be sent from the first to address" do
@@ -1707,7 +1705,7 @@ describe Mail::Message do
     describe "to a reply" do
 
       before do
-        @mail = Mail::Message.new(File.read(fixture('emails', 'plain_emails', 'raw_email_reply.eml')))
+        @mail = Mail.read(fixture('emails', 'plain_emails', 'raw_email_reply.eml'))
       end
 
       it "should be in-reply-to the original message" do

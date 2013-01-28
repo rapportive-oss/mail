@@ -6,7 +6,7 @@
 # Message-ID: header field in the email.
 # 
 # Sending message_id to a mail message will instantiate a Mail::Field object that
-# has a MessageIdField as it's field type.  This includes all Mail::CommonMessageId
+# has a MessageIdField as its field type.  This includes all Mail::CommonMessageId
 # module instance metods.
 # 
 # Only one MessageId field can appear in a header, and syntactically it can only have
@@ -75,8 +75,7 @@ module Mail
     private
     
     def generate_message_id
-      fqdn = ::Socket.gethostname
-      "<#{Mail.random_tag}@#{fqdn}.mail>"
+      "<#{Mail.random_tag}@#{::Socket.gethostname}.mail>"
     end
     
   end

@@ -6,7 +6,7 @@
 # In-Reply-To: header field in the email.
 # 
 # Sending in_reply_to to a mail message will instantiate a Mail::Field object that
-# has a InReplyToField as it's field type.  This includes all Mail::CommonMessageId
+# has a InReplyToField as its field type.  This includes all Mail::CommonMessageId
 # module instance metods.
 # 
 # Note that, the #message_ids method will return an array of message IDs without the
@@ -38,6 +38,7 @@ module Mail
     
     def initialize(value = nil, charset = 'utf-8')
       self.charset = charset
+      value = value.join("\r\n\s") if value.is_a?(Array)
       super(CAPITALIZED_FIELD, strip_field(FIELD_NAME, value), charset)
       self.parse
       self
