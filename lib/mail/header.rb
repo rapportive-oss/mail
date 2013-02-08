@@ -87,11 +87,12 @@ module Mail
     def fields=(unfolded_fields)
       @fields = Mail::FieldList.new
       warn "Warning: more than #{self.class.maximum_amount} header fields only using the first #{self.class.maximum_amount}" if unfolded_fields.length > self.class.maximum_amount
-      unfolded_fields[0..(self.class.maximum_amount-1)].each do |field|
+      unfolded_fields[0..(self.class.maximum_amount-1)].each do |raw_source|
 
-        field = Field.new(field, nil, charset)
-        if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any? 
-          selected.first.update(field.name, field.value)
+        field = Field.new(raw_source, nil, charset)
+        if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any?
+          # TODO: This throws away the previous value of selected.first!
+          selected.first.update(raw_source)
         else
           @fields << field
         end
