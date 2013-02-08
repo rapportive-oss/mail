@@ -115,7 +115,7 @@ module Mail
       case
       when name =~ /:/                  # Field.new("field-name: field data")
         @name = name[FIELD_PREFIX]
-        @raw_value = name
+        @raw_source = name
         @value = nil
         @charset = value.blank? ? charset : value
       when name !~ /:/ && value.blank?  # Field.new("field-name")
@@ -137,20 +137,17 @@ module Mail
     end
 
     def field
-      _, @value = split(@raw_value) if @raw_value && !@value
-      @field ||= create_field(@name, @value)
+      @field ||= create_field(name, raw_value)
     end
 
-    def name
-      @name
-    end
+    attr_reader :name
 
     def value
       field.value
     end
 
     def value=(val)
-      @field = create_field(name, val)
+      self.field = create_field(name, val)
     end
 
     def to_s
@@ -164,7 +161,7 @@ module Mail
     end
 
     def update(name, value)
-      @field = create_field(name, value)
+      self.field = create_field(name, value)
     end
 
     def same( other )
@@ -202,11 +199,16 @@ module Mail
 
     private
 
-    def split(raw_field)
-      match_data = raw_field.mb_chars.match(FIELD_SPLIT)
-      [match_data[1].to_s.mb_chars.strip, match_data[2].to_s.mb_chars.strip.to_s]
-    rescue
-      STDERR.puts "WARNING: Could not parse (and so ignoring) '#{raw_field}'"
+    def raw_value
+      @value ||= @raw_source ? parse_raw_value : nil
+    end
+
+    def parse_raw_value
+      if match = @raw_source.mb_chars.match(FIELD_VALUE)
+        match[1].to_s.mb_chars.strip.to_s
+      else
+        STDERR.puts "WARNING: Could not parse (and so ignoring) #{@raw_source.inspect}"
+      end
     end
 
     # 2.2.3. Long Header Fields
