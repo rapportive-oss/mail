@@ -114,10 +114,10 @@ module Mail
     def initialize(name, value = nil, charset = 'utf-8')
       case
       when name =~ /:/                  # Field.new("field-name: field data")
-        @charset = value.blank? ? charset : value
         @name = name[FIELD_PREFIX]
         @raw_value = name
         @value = nil
+        @charset = value.blank? ? charset : value
       when name !~ /:/ && value.blank?  # Field.new("field-name")
         @name = name
         @value = nil
@@ -138,7 +138,7 @@ module Mail
 
     def field
       _, @value = split(@raw_value) if @raw_value && !@value
-      @field ||= create_field(@name, @value, @charset)
+      @field ||= create_field(@name, @value)
     end
 
     def name
@@ -150,7 +150,7 @@ module Mail
     end
 
     def value=(val)
-      @field = create_field(name, val, @charset)
+      @field = create_field(name, val)
     end
 
     def to_s
@@ -164,7 +164,7 @@ module Mail
     end
 
     def update(name, value)
-      @field = create_field(name, value, @charset)
+      @field = create_field(name, value)
     end
 
     def same( other )
@@ -221,11 +221,11 @@ module Mail
       string.gsub(/[\r\n \t]+/m, ' ')
     end
 
-    def create_field(name, value, charset)
+    def create_field(name, value)
       value = unfold(value) if value.is_a?(String)
 
       begin
-        new_field(name, value, charset)
+        new_field(name, value)
       rescue Mail::Field::ParseError => e
         field = Mail::UnstructuredField.new(name, value)
         field.errors << [name, value, e]
@@ -233,12 +233,12 @@ module Mail
       end
     end
 
-    def new_field(name, value, charset)
+    def new_field(name, value)
       lower_case_name = name.to_s.downcase
       if field_klass = FIELDS_MAP[lower_case_name]
-        field_klass.new(value, charset)
+        field_klass.new(value, @charset)
       else
-        OptionalField.new(name, value, charset)
+        OptionalField.new(name, value, @charset)
       end
     end
 
