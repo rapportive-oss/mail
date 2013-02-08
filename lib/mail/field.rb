@@ -112,24 +112,7 @@ module Mail
     #
     #  Field.new('content-type', ['text', 'plain', {:charset => 'UTF-8'}])
     def initialize(name, value = nil, charset = 'utf-8')
-      case
-      when name =~ /:/                  # Field.new("field-name: field data")
-        @name = name[FIELD_PREFIX]
-        @raw_source = name
-        @value = nil
-        @charset = value.blank? ? charset : value
-      when name !~ /:/ && value.blank?  # Field.new("field-name")
-        @name = name
-        @value = nil
-        @raw_value = nil
-        @charset = charset
-      else                              # Field.new("field-name", "value")
-        @name = name
-        @value = value
-        @raw_value = nil
-        @charset = charset
-      end
-      @name = FIELD_NAME_MAP[@name.to_s.downcase] || @name
+      update(name, value, charset)
     end
 
     def field=(value)
@@ -148,7 +131,7 @@ module Mail
     end
 
     def value=(val)
-      self.field = create_field(name, val)
+      update(name, val, @charset)
     end
 
     def to_s
@@ -179,8 +162,26 @@ module Mail
       @raw_source
     end
 
-    def update(name, value)
-      self.field = create_field(name, value)
+    def update(name, value = nil, charset = @charset)
+      @field = nil
+      @raw_source = nil
+      @ready_to_send = false
+      case
+      when name =~ /:/                  # Field.new("field-name: field data")
+        @name = name[FIELD_PREFIX]
+        @value = nil
+        @raw_source = name
+        @charset = value.blank? ? charset : value
+      when name !~ /:/ && value.blank?  # Field.new("field-name")
+        @name = name
+        @value = nil
+        @charset = charset
+      else                              # Field.new("field-name", "value")
+        @name = name
+        @value = value
+        @charset = charset
+      end
+      @name = FIELD_NAME_MAP[@name.to_s.downcase] || @name
     end
 
     def same( other )
