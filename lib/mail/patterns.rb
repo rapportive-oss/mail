@@ -23,7 +23,7 @@ module Mail
     FIELD_PREFIX  = /\A(#{FIELD_NAME})/
     FIELD_BODY    = /.+/m
     FIELD_LINE    = /^[#{field_name}]+:\s*.+$/
-    FIELD_SPLIT   = /^(#{FIELD_NAME})\s*:\s*(#{FIELD_BODY})?$/
+    FIELD_VALUE   = /^#{FIELD_NAME}\s*:\s*(#{FIELD_BODY})?$/
     HEADER_LINE   = /^([#{field_name}]+:\s*.+)$/
     HEADER_SPLIT  = /#{CRLF}(?!#{WSP})/
 
