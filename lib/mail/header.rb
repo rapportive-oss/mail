@@ -197,11 +197,20 @@ module Mail
                            content-transfer-encoding content-description 
                            content-id content-disposition content-location]
 
+    def ready_to_send!
+      fields.each(&:ready_to_send!)
+    end
+
     def encoded
+      ready_to_send!
+      encoded_as_is
+    end
+
+    def encoded_as_is
       buffer = ''
       buffer.force_encoding('us-ascii') if buffer.respond_to?(:force_encoding)
       fields.each do |field|
-        buffer << field.encoded
+        buffer << field.encoded_as_is
       end
       buffer
     end

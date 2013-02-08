@@ -134,6 +134,7 @@ module Mail
 
     def field=(value)
       @field = value
+      @raw_source = nil
     end
 
     def field
@@ -160,6 +161,24 @@ module Mail
       end.join(" ")}>"
     end
 
+    def ready_to_send!
+      unless @ready_to_send && @raw_source
+        @ready_to_send = true
+        @raw_source = field.encoded
+      end
+    end
+
+    def encoded
+      ready_to_send!
+      encoded_as_is
+    end
+
+    def encoded_as_is
+      @raw_source ||= field.encoded
+      @raw_source << "\r\n" if @raw_source != "" && !@raw_source.end_with?("\r\n")
+      @raw_source
+    end
+
     def update(name, value)
       self.field = create_field(name, value)
     end
@@ -183,7 +202,9 @@ module Mail
     end
 
     def method_missing(name, *args, &block)
-      field.send(name, *args, &block)
+      ret = field.send(name, *args, &block)
+      @raw_source = nil if name.to_s.end_with?("=")
+      ret
     end
 
     FIELD_ORDER = %w[ return-path received

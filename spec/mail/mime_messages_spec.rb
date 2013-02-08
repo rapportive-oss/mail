@@ -139,7 +139,7 @@ describe "MIME Emails" do
 
       it "should assign the text part and allow you to reference" do
         mail = Mail.new
-        text_mail = Mail.new("This is Text")
+        text_mail = Mail.new("Content-Type: text/plain\r\n\r\nThis is Text")
         mail.text_part = text_mail
         mail.text_part.should eq text_mail
       end
@@ -152,7 +152,7 @@ describe "MIME Emails" do
 
       it "should assign the html part and allow you to reference" do
         mail = Mail.new
-        html_mail = Mail.new("<b>This is HTML</b>")
+        html_mail = Mail.new("Content-Type: text/html\r\n\r\n<b>This is HTML</b>")
         mail.html_part = html_mail
         mail.html_part.should eq html_mail
       end
