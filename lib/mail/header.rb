@@ -48,7 +48,6 @@ module Mail
     # these cases, please make a patch and send it in, or at the least, send
     # me the example so we can fix it.
     def initialize(header_text = nil, charset = nil)
-      @errors = []
       @charset = charset
       self.raw_source = header_text.to_crlf.lstrip
       split_header if header_text
@@ -88,12 +87,12 @@ module Mail
     def fields=(unfolded_fields)
       @fields = Mail::FieldList.new
       warn "Warning: more than #{self.class.maximum_amount} header fields only using the first #{self.class.maximum_amount}" if unfolded_fields.length > self.class.maximum_amount
-      unfolded_fields[0..(self.class.maximum_amount-1)].each do |field|
+      unfolded_fields[0..(self.class.maximum_amount-1)].each do |raw_source|
 
-        field = Field.new(field, nil)
-        field.errors.each { |error| self.errors << error }
-        if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any? 
-          selected.first.update(field.name, field.value)
+        field = Field.new(raw_source, nil)
+        if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any?
+          # TODO: This throws away the previous value of selected.first!
+          selected.first.update(raw_source)
         else
           @fields << field
         end
@@ -102,7 +101,7 @@ module Mail
     end
     
     def errors
-      @errors
+      @fields.map(&:errors).flatten(1)
     end
     
     #  3.6. Field definitions
@@ -199,11 +198,20 @@ module Mail
                            content-transfer-encoding content-description 
                            content-id content-disposition content-location]
 
+    def ready_to_send!
+      fields.each(&:ready_to_send!)
+    end
+
     def encoded
+      ready_to_send!
+      encoded_as_is
+    end
+
+    def encoded_as_is
       buffer = ''
       buffer.force_encoding('us-ascii') if buffer.respond_to?(:force_encoding)
       fields.each do |field|
-        buffer << field.encoded
+        buffer << field.encoded_as_is
       end
       buffer
     end
@@ -246,27 +254,10 @@ module Mail
       @raw_source = val
     end
     
-    # 2.2.3. Long Header Fields
-    # 
-    #  The process of moving from this folded multiple-line representation
-    #  of a header field to its single line representation is called
-    #  "unfolding". Unfolding is accomplished by simply removing any CRLF
-    #  that is immediately followed by WSP.  Each header field should be
-    #  treated in its unfolded form for further syntactic and semantic
-    #  evaluation.
-    def unfold(string)
-      string.gsub(/#{CRLF}#{WSP}+/, ' ').gsub(/#{WSP}+/, ' ')
-    end
-    
-    # Returns the header with all the folds removed
-    def unfolded_header
-      @unfolded_header ||= unfold(raw_source)
-    end
-    
     # Splits an unfolded and line break cleaned header into individual field
     # strings.
     def split_header
-      self.fields = unfolded_header.split(CRLF)
+      self.fields = raw_source.split(HEADER_SPLIT)
     end
     
     def select_field_for(name)

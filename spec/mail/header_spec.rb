@@ -461,10 +461,10 @@ HERE
       header = Mail::Header.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b")
       header.errors.should_not be_blank
       header.errors.size.should eq 2
-      header.errors[0][0].should eq 'Content-Transfer-Encoding'
-      header.errors[0][1].should eq 'vl@d'
-      header.errors[1][0].should eq 'Reply-To'
-      header.errors[1][1].should eq 'a b b'
+      header.errors[0][0].should eq 'Reply-To'
+      header.errors[0][1].should eq 'a b b'
+      header.errors[1][0].should eq 'Content-Transfer-Encoding'
+      header.errors[1][1].should eq 'vl@d'
     end
   end
 
@@ -562,7 +562,52 @@ TRACEHEADER
       end
     end
   end
-  
+
+  describe "encoded_as_is" do
+    it "should not reflow headers" do
+      header = "Content-Type: text/html; charset=utf-8\r\n"
+      Mail::Header.new(header).encoded_as_is.should == header
+    end
+
+    it "should not fix case" do
+      header = "content-type: text/html; charset=utf-8\r\n"
+      Mail::Header.new(header).encoded_as_is.should == header
+    end
+
+    it "should include any headers that were added manually" do
+      header = "content-type: text/html; charset=utf-8\r\n"
+      h = Mail::Header.new(header)
+      h["From"] = "Conrad Irwin <me@cirw.in>"
+      h.encoded_as_is.should == "From: Conrad Irwin <me@cirw.in>\r\n#{header}"
+    end
+
+    it "should rewrite the content-type if the charset is set" do
+      header = "content-type: text/html; charset=utf-8\r\n"
+      h = Mail::Header.new(header)
+      h['Content-Type'].charset = "utf-8"
+      h.encoded_as_is.should == "Content-Type: text/html;\r\n charset=utf-8\r\n"
+    end
+
+    it "should rewrite the field if the value is changed" do
+      header = "content-type: text/html; charset=utf-8\r\n"
+      h = Mail::Header.new(header)
+      h['Content-Type'].value = "content-type: text/html; charset=utf-8"
+      h.encoded_as_is.should == "Content-Type: text/html;\r\n charset=utf-8\r\n"
+    end
+
+    it "should rewrite the field if its name is changed" do
+      header = "content-type: text/html; charset=utf-8\r\n"
+      h = Mail::Header.new(header)
+      h['Content-Type'].name = "Content-Type"
+      h.encoded_as_is.should == "Content-Type: text/html;\r\n charset=utf-8\r\n"
+    end
+
+    it "should fix line-endings" do
+      header = "To: A. User <a.user@example.com>\nCc: A.N. Other <an.other@example.com>\n"
+      Mail::Header.new(header).encoded_as_is.should == header.gsub("\n", "\r\n")
+    end
+  end
+
   describe "detecting required fields" do
     it "should not say it has a message id if it doesn't" do
       Mail::Header.new.should_not be_has_message_id
