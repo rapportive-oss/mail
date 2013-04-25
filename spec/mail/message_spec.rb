@@ -189,6 +189,43 @@ describe Mail::Message do
         deserialized.parts.map(&:body).should == ['body', '<b>body</b>']
       end
     end
+
+    describe "splitting" do
+      it "should split the body from the header" do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\n\r\nHello there\r\n")
+        message.decoded.should == "Hello there\n"
+      end
+
+      it "should split when the body starts with a space" do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\n\r\n Hello there\r\n")
+        message.decoded.should == " Hello there\n"
+      end
+
+      it "should split if the body starts with an empty line" do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\n\r\n\r\nHello there\r\n")
+        message.decoded.should == "\nHello there\n"
+      end
+
+      it "should split if the body starts with a blank line" do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\n\r\n\t\r\nHello there\r\n")
+        message.decoded.should == "\t\nHello there\n"
+      end
+
+      it 'should split after headers that contain "\r\n "' do
+        message = Mail::Message.new("To: Example\r\n <example@cirw.in>\r\n\r\n Hello there\r\n")
+        message.decoded.should == " Hello there\n"
+      end
+
+      it 'should split only once if there are "\r\n\r\n"s in the body' do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\n\r\nHello\r\n\r\nthere\r\n")
+        message.decoded.should == "Hello\n\nthere\n"
+      end
+
+      it "should allow headers that end in trailing whitespace" do
+        message = Mail::Message.new("To: Example <example@cirw.in>\r\nThread-Topic: -= MAINTENANCE =- Canasta - Wednesday 4/24/2013 8am - 10am\r\n                                         \r\n\r\nHello there\r\n")
+        message.decoded.should == "Hello there\n"
+      end
+    end
   end
 
   describe "envelope line handling" do
@@ -276,15 +313,6 @@ describe Mail::Message do
       Mail::Header.should_receive(:new).with("To: mikel", 'UTF-8').and_return(header)
       Mail::Body.should_receive(:new).with("G'Day!").and_return(body)
       mail = Mail::Message.new("To: mikel\r\n\r\nG'Day!")
-      mail.body #body calculates now lazy so need to ask for it
-    end
-
-    it "should give allow for whitespace on the gap line between header and body" do
-      header = Mail::Header.new("To: mikel")
-      body = Mail::Body.new("G'Day!")
-      Mail::Header.should_receive(:new).with("To: mikel", 'UTF-8').and_return(header)
-      Mail::Body.should_receive(:new).with("G'Day!").and_return(body)
-      mail = Mail::Message.new("To: mikel\r\n   		  \r\nG'Day!")
       mail.body #body calculates now lazy so need to ask for it
     end
 

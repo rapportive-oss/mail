@@ -132,6 +132,10 @@ module Mail
       when 'shift-jis'
         Encoding::Shift_JIS
 
+      # GB2312 (Chinese charset) is a subset of GB18030 (its replacement)
+      when /gb2312/i
+        Encoding::GB18030
+
       else
         charset
       end

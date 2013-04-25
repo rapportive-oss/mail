@@ -149,6 +149,11 @@ describe Mail::Encodings do
       Mail::Encodings.value_decode(string).should == result
     end
 
+    it "should decode a string that looks similar to an encoded string (contains '=?')" do
+      string = "1+1=?"
+      Mail::Encodings.value_decode(string).should == string
+    end
+
     if '1.9'.respond_to?(:force_encoding)
       it "should decode 8bit encoded string" do
         string = "=?8bit?Q?ALPH=C3=89E?="
@@ -164,6 +169,11 @@ describe Mail::Encodings do
       it "should decode shift-jis encoded string" do
         string = '=?shift-jis?Q?=93=FA=96{=8C=EA=?='.force_encoding('us-ascii')
         Mail::Encodings.value_decode(string).should == "日本語"
+      end
+
+      it "should decode GB18030 encoded string misidentified as GB2312" do
+        string = '=?GB2312?B?6V8=?='.force_encoding('us-ascii')
+        Mail::Encodings.value_decode(string).should == "開"
       end
     end
   end
