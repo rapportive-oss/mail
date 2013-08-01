@@ -87,9 +87,9 @@ module Mail
     def fields=(unfolded_fields)
       @fields = Mail::FieldList.new
       warn "Warning: more than #{self.class.maximum_amount} header fields only using the first #{self.class.maximum_amount}" if unfolded_fields.length > self.class.maximum_amount
-      unfolded_fields[0..(self.class.maximum_amount-1)].each do |field|
+      unfolded_fields[0..(self.class.maximum_amount-1)].each do |raw_source|
 
-        field = Field.new(field, nil)
+        field = Field.new(raw_source, nil)
         if limited_field?(field.name) && (selected = select_field_for(field.name)) && selected.any? 
           selected.first.update(field.name, field.value)
         else
@@ -197,11 +197,20 @@ module Mail
                            content-transfer-encoding content-description 
                            content-id content-disposition content-location]
 
+    def ready_to_send!
+      fields.each(&:ready_to_send!)
+    end
+
     def encoded
+      ready_to_send!
+      encoded_as_is
+    end
+
+    def encoded_as_is
       buffer = ''
       buffer.force_encoding('us-ascii') if buffer.respond_to?(:force_encoding)
       fields.each do |field|
-        buffer << field.encoded
+        buffer << field.encoded_as_is
       end
       buffer
     end

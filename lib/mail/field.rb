@@ -112,45 +112,26 @@ module Mail
     #
     #  Field.new('content-type', ['text', 'plain', {:charset => 'UTF-8'}])
     def initialize(name, value = nil, charset = 'utf-8')
-      case
-      when name =~ /:/                  # Field.new("field-name: field data")
-        @charset = value.blank? ? charset : value
-        @name = name[FIELD_PREFIX]
-        @raw_value = name
-        @value = nil
-      when name !~ /:/ && value.blank?  # Field.new("field-name")
-        @name = name
-        @value = nil
-        @raw_value = nil
-        @charset = charset
-      else                              # Field.new("field-name", "value")
-        @name = name
-        @value = value
-        @raw_value = nil
-        @charset = charset
-      end
-      @name = FIELD_NAME_MAP[@name.to_s.downcase] || @name
+      update(name, value, charset)
     end
 
     def field=(value)
       @field = value
+      @raw_source = nil
     end
 
     def field
-      _, @value = split(@raw_value) if @raw_value && !@value
-      @field ||= create_field(@name, @value, @charset)
+      @field ||= create_field(name, raw_value)
     end
 
-    def name
-      @name
-    end
+    attr_reader :name
 
     def value
       field.value
     end
 
     def value=(val)
-      @field = create_field(name, val, @charset)
+      update(name, val, @charset)
     end
 
     def to_s
@@ -163,8 +144,44 @@ module Mail
       end.join(" ")}>"
     end
 
-    def update(name, value)
-      @field = create_field(name, value, @charset)
+    def ready_to_send!
+      unless @ready_to_send && @raw_source
+        @ready_to_send = true
+        @raw_source = field.encoded
+      end
+    end
+
+    def encoded
+      ready_to_send!
+      encoded_as_is
+    end
+
+    def encoded_as_is
+      @raw_source ||= field.encoded
+      @raw_source << "\r\n" if @raw_source != "" && !@raw_source.end_with?("\r\n")
+      @raw_source
+    end
+
+    def update(name, value = nil, charset = @charset)
+      @field = nil
+      @raw_source = nil
+      @ready_to_send = false
+      case
+      when name =~ /:/                  # Field.new("field-name: field data")
+        @name = name[FIELD_PREFIX]
+        @value = nil
+        @raw_source = name
+        @charset = value.blank? ? charset : value
+      when name !~ /:/ && value.blank?  # Field.new("field-name")
+        @name = name
+        @value = nil
+        @charset = charset
+      else                              # Field.new("field-name", "value")
+        @name = name
+        @value = value
+        @charset = charset
+      end
+      @name = FIELD_NAME_MAP[@name.to_s.downcase] || @name
     end
 
     def same( other )
@@ -186,7 +203,9 @@ module Mail
     end
 
     def method_missing(name, *args, &block)
-      field.send(name, *args, &block)
+      ret = field.send(name, *args, &block)
+      @raw_source = nil if name.to_s.end_with?("=")
+      ret
     end
 
     FIELD_ORDER = %w[ return-path received
@@ -202,11 +221,16 @@ module Mail
 
     private
 
-    def split(raw_field)
-      match_data = raw_field.mb_chars.match(FIELD_SPLIT)
-      [match_data[1].to_s.mb_chars.strip, match_data[2].to_s.mb_chars.strip.to_s]
-    rescue
-      STDERR.puts "WARNING: Could not parse (and so ignoring) '#{raw_field}'"
+    def raw_value
+      @value ||= @raw_source ? parse_raw_value : nil
+    end
+
+    def parse_raw_value
+      if match = @raw_source.mb_chars.match(FIELD_VALUE)
+        match[1].to_s.mb_chars.strip.to_s
+      else
+        STDERR.puts "WARNING: Could not parse (and so ignoring) #{@raw_source.inspect}"
+      end
     end
 
     # 2.2.3. Long Header Fields
@@ -221,11 +245,11 @@ module Mail
       string.gsub(/[\r\n \t]+/m, ' ')
     end
 
-    def create_field(name, value, charset)
+    def create_field(name, value)
       value = unfold(value) if value.is_a?(String)
 
       begin
-        new_field(name, value, charset)
+        new_field(name, value)
       rescue Mail::Field::ParseError => e
         field = Mail::UnstructuredField.new(name, value)
         field.errors << [name, value, e]
@@ -233,12 +257,12 @@ module Mail
       end
     end
 
-    def new_field(name, value, charset)
+    def new_field(name, value)
       lower_case_name = name.to_s.downcase
       if field_klass = FIELDS_MAP[lower_case_name]
-        field_klass.new(value, charset)
+        field_klass.new(value, @charset)
       else
-        OptionalField.new(name, value, charset)
+        OptionalField.new(name, value, @charset)
       end
     end
 
