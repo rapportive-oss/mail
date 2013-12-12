@@ -57,8 +57,8 @@ module Mail
       end
       decoded = str.encode("utf-8", :invalid => :replace, :replace => "")
       decoded.valid_encoding? ? decoded : decoded.encode("utf-16le", :invalid => :replace, :replace => "").encode("utf-8")
-    rescue Encoding::ConverterNotFoundError
-      str.dup.force_encoding("utf-8").encode("utf-16le", :invalid => :replace, :replace => "").encode("utf-8")
+    rescue Encoding::ConverterNotFoundError, Encoding::UndefinedConversionError
+      force_fix_utf8(str)
     end
 
     def Ruby19.q_value_encode(str, encoding = nil)
@@ -81,10 +81,8 @@ module Mail
       end
       decoded = str.encode("utf-8", :invalid => :replace, :replace => "")
       decoded.valid_encoding? ? decoded : decoded.encode("utf-16le", :invalid => :replace, :replace => "").encode("utf-8")
-    rescue Encoding::ConverterNotFoundError
-      str.dup.force_encoding("utf-8").encode("utf-16le", :invalid => :replace, :replace => "").encode("utf-8")
-    rescue Encoding::UndefinedConversionError
-      str.dup.force_encoding("utf-8")
+    rescue Encoding::ConverterNotFoundError, Encoding::UndefinedConversionError
+      force_fix_utf8(str)
     end
 
     def Ruby19.param_decode(str, encoding)
@@ -97,6 +95,11 @@ module Mail
       encoding = str.encoding.to_s.downcase
       language = Configuration.instance.param_encode_language
       "#{encoding}'#{language}'#{uri_parser.escape(str)}"
+    end
+
+    # Returns UTF8 string with invalid characters stripped.  Does not modify 'str'.
+    def Ruby19.force_fix_utf8(str)
+      str.dup.force_encoding("utf-8").encode("utf-16le", :invalid => :replace, :replace => "").encode("utf-8")
     end
 
     def Ruby19.uri_parser
